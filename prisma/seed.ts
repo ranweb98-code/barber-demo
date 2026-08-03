@@ -1,4 +1,8 @@
+import dotenv from "dotenv";
 import { prisma } from "../src/lib/prisma";
+
+dotenv.config({ path: ".env" });
+dotenv.config({ path: ".env.local", override: true });
 
 async function main() {
   await prisma.appointment.deleteMany();
