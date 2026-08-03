@@ -29,6 +29,11 @@ export const metadata: Metadata = {
   title: "Aviel Naim | קביעת תורים",
   description: "מספרת יוקרה — קביעת תורים online",
   manifest: "/manifest.webmanifest",
+  openGraph: {
+    title: "Aviel Naim | קביעת תורים",
+    description: "מספרת יוקרה — קביעת תורים online",
+    images: [{ url: "/screenshots/home-mobile.png", width: 390, height: 844, alt: "Aviel Naim" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

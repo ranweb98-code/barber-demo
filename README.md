@@ -2,6 +2,13 @@
 
 דמו מלא ועובד למערכת קביעת תורים למספרה/ספר, בעברית RTL, mobile-first PWA.
 
+**דמו חי:** [barber-demo-phi-plum.vercel.app](https://barber-demo-phi-plum.vercel.app)
+
+<p align="center">
+  <img src="public/screenshots/home-mobile.png" alt="דף הבית — Aviel Naim" width="280" />
+  <img src="public/screenshots/book-mobile.png" alt="קביעת תור" width="280" />
+</p>
+
 ## התחלה מהירה
 
 ```bash
