@@ -1,7 +1,7 @@
-import Image from "next/image";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { HERO_IMAGE } from "@/lib/assets";
+import { HeroMedia } from "@/components/HeroMedia";
 import { cn } from "@/lib/cn";
 import { BUSINESS_NAME } from "@/lib/utils";
 
@@ -10,8 +10,8 @@ type PageHeroProps = {
   showBack?: boolean;
   backHref?: string;
   fullScreen?: boolean;
-  bottomContent?: React.ReactNode;
-  topContent?: React.ReactNode;
+  bottomContent?: ReactNode;
+  topContent?: ReactNode;
   className?: string;
   imagePriority?: boolean;
 };
@@ -35,16 +35,7 @@ export function PageHero({
       )}
     >
       <div className="page-hero__media">
-        <Image
-          src={HERO_IMAGE}
-          alt={businessName}
-          fill
-          priority={imagePriority}
-          loading={imagePriority ? undefined : "lazy"}
-          quality={95}
-          className="object-cover grayscale"
-          sizes="100vw"
-        />
+        <HeroMedia alt={businessName} priority={imagePriority} />
         <div className="page-hero__overlay" aria-hidden />
       </div>
 
