@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
+    "dev": "next dev",
     "start": "next start",
     "lint": "eslint",
     "db:push": "prisma db push",
@@ -12,13 +12,20 @@
     "postinstall": "prisma generate",
     "icons": "node scripts/generate-icons.mjs",
     "backfill:customers": "tsx scripts/backfill-customers.ts",
-    "import:customers": "tsx scripts/import-customers-xlsx.ts"
+    "import:customers": "tsx scripts/import-customers-xlsx.ts",
+    "preview": "opennextjs-cloudflare build && node scripts/copy-prisma-wasm.mjs && node scripts/patch-wasm-loader.mjs && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && node scripts/copy-prisma-wasm.mjs && node scripts/patch-wasm-loader.mjs && opennextjs-cloudflare deploy",
+    "upload": "opennextjs-cloudflare build && node scripts/copy-prisma-wasm.mjs && node scripts/patch-wasm-loader.mjs && opennextjs-cloudflare upload",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@opennextjs/cloudflare": "^1.20.2",
     "@prisma/adapter-better-sqlite3": "^7.8.0",
+    "@prisma/adapter-neon": "^7.9.1",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@serwist/next": "^9.5.11",
@@ -28,7 +35,7 @@
     "dotenv": "^17.4.2",
     "jose": "^6.2.3",
     "lucide-react": "^1.18.0",
-    "next": "15.5.19",
+    "next": "^15.5.21",
     "pg": "^8.21.0",
     "prisma": "^7.8.0",
     "react": "19.1.0",
@@ -49,11 +56,12 @@
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
-    "eslint-config-next": "15.5.19",
+    "eslint-config-next": "^15.5.21",
     "sharp": "^0.35.1",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
     "typescript": "^5",
+    "wrangler": "^4.123.0",
     "xlsx": "^0.18.5"
   }
 }

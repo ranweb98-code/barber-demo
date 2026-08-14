@@ -1,7 +1,35 @@
 import { prisma } from "@/lib/prisma";
 
+/** Normalize for lookup (972… international format). */
 export function normalizePhone(phone: string): string {
-  return phone.replace(/[\s\-()+]/g, "").replace(/^0/, "972");
+  const formatted = formatPhoneForStorage(phone);
+  if (!/^[\d]+$/.test(formatted)) {
+    return phone.replace(/[\s\-()+]/g, "").replace(/^0/, "972");
+  }
+  return formatted.replace(/^0/, "972");
+}
+
+/**
+ * Canonical Israeli local format for storage/display (leading 0).
+ * Skips transformation when the value is not phone-like (e.g. search text).
+ */
+export function formatPhoneForStorage(phone: string): string {
+  const trimmed = phone.trim();
+  if (!trimmed) return trimmed;
+
+  if (!/^[\d\s\-()+]+$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  let digits = trimmed.replace(/[\s\-()+]/g, "");
+
+  if (digits.startsWith("972")) {
+    digits = `0${digits.slice(3)}`;
+  } else if (!digits.startsWith("0") && digits.length === 9 && digits.startsWith("5")) {
+    digits = `0${digits}`;
+  }
+
+  return digits;
 }
 
 export function formatCustomerName(firstName: string, lastName: string): string {
@@ -23,13 +51,14 @@ type UpsertBookingInput = {
 };
 
 export async function upsertCustomerFromBooking(input: UpsertBookingInput) {
-  const normalized = normalizePhone(input.phone);
+  const phone = formatPhoneForStorage(input.phone);
+  const normalized = normalizePhone(phone);
   const { firstName, lastName } = storeFullName(input.name);
   const email = input.email?.trim() ?? "";
 
   const existing = await prisma.customer.findFirst({
     where: {
-      OR: [{ phone: input.phone }, { phone: normalized }],
+      OR: [{ phone }, { phone: normalized }, { phone: input.phone.trim() }],
     },
   });
 
@@ -39,7 +68,7 @@ export async function upsertCustomerFromBooking(input: UpsertBookingInput) {
       data: {
         firstName,
         lastName,
-        phone: input.phone.trim(),
+        phone,
         ...(email ? { email } : {}),
       },
     });
@@ -49,7 +78,7 @@ export async function upsertCustomerFromBooking(input: UpsertBookingInput) {
     data: {
       firstName,
       lastName,
-      phone: input.phone.trim(),
+      phone,
       email,
     },
   });
@@ -92,6 +121,7 @@ export async function searchCustomers(query: string) {
   }
 
   const normalized = normalizePhone(q);
+  const formatted = formatPhoneForStorage(q);
 
   return prisma.customer.findMany({
     where: {
@@ -99,7 +129,10 @@ export async function searchCustomers(query: string) {
         { firstName: { contains: q, mode: "insensitive" } },
         { lastName: { contains: q, mode: "insensitive" } },
         { phone: { contains: q } },
-        ...(normalized !== q ? [{ phone: { contains: normalized } }] : []),
+        ...(formatted !== q ? [{ phone: { contains: formatted } }] : []),
+        ...(normalized !== q && normalized !== formatted
+          ? [{ phone: { contains: normalized } }]
+          : []),
         { email: { contains: q, mode: "insensitive" } },
       ],
     },

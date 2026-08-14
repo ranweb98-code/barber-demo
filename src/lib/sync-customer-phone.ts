@@ -1,3 +1,4 @@
+import { formatPhoneForStorage } from "@/lib/customers";
 import { prisma } from "@/lib/prisma";
 
 async function syncCustomerPhone(
@@ -5,7 +6,7 @@ async function syncCustomerPhone(
   phone: string,
   excludeCustomerId?: number
 ) {
-  const trimmed = phone.trim();
+  const trimmed = formatPhoneForStorage(phone);
   const duplicate = await prisma.customer.findFirst({
     where: {
       phone: trimmed,

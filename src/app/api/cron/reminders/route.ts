@@ -15,8 +15,9 @@ function isAuthorized(request: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET ?? process.env.AUTH_SECRET;
   const authHeader = request.headers.get("authorization");
   const vercelCron = request.headers.get("x-vercel-cron");
+  const cfCron = request.headers.get("cf-cron") ?? request.headers.get("cf-scheduled");
 
-  if (vercelCron) return true;
+  if (vercelCron || cfCron) return true;
   if (authHeader === `Bearer ${cronSecret}`) return true;
 
   return process.env.NODE_ENV === "development";

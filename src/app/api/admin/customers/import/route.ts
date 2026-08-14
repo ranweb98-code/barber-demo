@@ -142,11 +142,12 @@ export async function POST(request: NextRequest) {
 
       const data = parsed.data;
       const { firstName, lastName } = storeFullName(data.fullName);
-      const normalized = normalizePhone(data.phone);
+      const phone = data.phone;
+      const normalized = normalizePhone(phone);
 
       const existing = await prisma.customer.findFirst({
         where: {
-          OR: [{ phone: data.phone.trim() }, { phone: normalized }],
+          OR: [{ phone }, { phone: normalized }],
         },
       });
 
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
           data: {
             firstName,
             lastName,
-            phone: data.phone.trim(),
+            phone,
             ...(data.email ? { email: data.email.trim() } : {}),
             ...(data.notes ? { notes: data.notes.trim() } : {}),
           },
@@ -167,7 +168,7 @@ export async function POST(request: NextRequest) {
           data: {
             firstName,
             lastName,
-            phone: data.phone.trim(),
+            phone,
             email: data.email?.trim() ?? "",
             notes: data.notes?.trim() || null,
           },

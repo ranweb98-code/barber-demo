@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formatPhoneForStorage } from "@/lib/customers";
 
 export const appointmentCreateSchema = z.object({
   serviceId: z.number().int().positive(),
@@ -8,7 +9,8 @@ export const appointmentCreateSchema = z.object({
   customerPhone: z
     .string()
     .min(9, "מספר טלפון לא תקין")
-    .regex(/^[\d\-+()\s]+$/, "מספר טלפון לא תקין"),
+    .regex(/^[\d\-+()\s]+$/, "מספר טלפון לא תקין")
+    .transform(formatPhoneForStorage),
   customerEmail: z
     .string()
     .optional()
@@ -40,6 +42,7 @@ export const appointmentUpdateSchema = z
       .string()
       .min(9, "מספר טלפון לא תקין")
       .regex(/^[\d\-+()\s]+$/, "מספר טלפון לא תקין")
+      .transform(formatPhoneForStorage)
       .optional(),
   })
   .refine(
@@ -127,7 +130,8 @@ export const customerCreateSchema = z.object({
   phone: z
     .string()
     .min(9, "מספר טלפון לא תקין")
-    .regex(/^[\d\-+()\s]+$/, "מספר טלפון לא תקין"),
+    .regex(/^[\d\-+()\s]+$/, "מספר טלפון לא תקין")
+    .transform(formatPhoneForStorage),
   email: z
     .string()
     .optional()
@@ -143,7 +147,11 @@ export const customerUpdateSchema = customerCreateSchema.partial();
 
 export const customerImportRowSchema = z.object({
   fullName: z.string().min(1),
-  phone: z.string().min(9),
+  phone: z
+    .string()
+    .min(9)
+    .regex(/^[\d\-+()\s]+$/, "מספר טלפון לא תקין")
+    .transform(formatPhoneForStorage),
   email: z.string().optional().default(""),
   notes: z.string().optional(),
 });

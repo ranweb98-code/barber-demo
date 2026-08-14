@@ -41,6 +41,8 @@ export const metadata: Metadata = {
   },
 };
 
+export const dynamic = "force-dynamic";
+
 export async function generateViewport(): Promise<Viewport> {
   const theme = await getSetting("theme", "dark");
   return {

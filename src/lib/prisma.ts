@@ -1,5 +1,4 @@
-import { PrismaPg } from "@prisma/adapter-pg";
-import pg from "pg";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@/generated/prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
@@ -13,8 +12,7 @@ function createPrismaClient(): PrismaClient {
     throw new Error("DATABASE_URL is not set");
   }
 
-  const pool = new pg.Pool({ connectionString });
-  const adapter = new PrismaPg(pool);
+  const adapter = new PrismaNeon({ connectionString });
   return new PrismaClient({ adapter });
 }
 

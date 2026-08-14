@@ -8,7 +8,20 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pg", "@prisma/adapter-pg", "web-push"],
+  serverExternalPackages: [
+    "@prisma/client",
+    ".prisma/client",
+    "@prisma/adapter-neon",
+    "@neondatabase/serverless",
+    "web-push",
+  ],
+  webpack: (config) => {
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+    };
+    return config;
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
@@ -28,3 +41,5 @@ const nextConfig: NextConfig = {
 };
 
 export default withSerwist(nextConfig);
+
+import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());
