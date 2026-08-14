@@ -183,7 +183,7 @@ export function NotificationPermissionGate() {
                 חסרים מפתחות התראות
               </h2>
               <p className="text-sm leading-relaxed text-text-secondary">
-                יש להגדיר NEXT_PUBLIC_VAPID_PUBLIC_KEY בסביבה ולבצע Redeploy.
+                לא הצלחנו לטעון את הגדרות ההתראות. נסו שוב בעוד רגע.
               </p>
             </div>
             <Button

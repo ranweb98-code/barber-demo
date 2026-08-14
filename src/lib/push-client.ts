@@ -79,6 +79,20 @@ async function resolveRole(preferred: PushRole): Promise<PushRole> {
   return "customer";
 }
 
+async function getVapidPublicKey(): Promise<string | null> {
+  const fromBuild = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  if (fromBuild) return fromBuild;
+
+  try {
+    const res = await fetch("/api/push/config", { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { vapidPublicKey?: string };
+    return data.vapidPublicKey ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function ensurePushSubscription(options: {
   role: PushRole;
   phone?: string;
@@ -109,7 +123,7 @@ export async function ensurePushSubscription(options: {
     return { ok: false, reason: "default" };
   }
 
-  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const vapidPublicKey = await getVapidPublicKey();
   if (!vapidPublicKey) {
     return { ok: false, reason: "no-vapid" };
   }
