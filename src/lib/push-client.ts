@@ -93,11 +93,14 @@ async function getVapidPublicKey(): Promise<string | null> {
   }
 }
 
+export { hasActivePushSubscription } from "@/lib/service-worker-client";
+
 export async function ensurePushSubscription(options: {
   role: PushRole;
   phone?: string;
   email?: string;
   updateOnly?: boolean;
+  requestPermission?: boolean;
 }): Promise<EnsurePushResult> {
   if (typeof window === "undefined") {
     return { ok: false, reason: "unsupported" };
@@ -111,8 +114,10 @@ export async function ensurePushSubscription(options: {
     return { ok: false, reason: "unsupported" };
   }
 
+  const shouldRequestPermission = options.requestPermission ?? true;
   let permission = Notification.permission;
-  if (permission === "default") {
+
+  if (shouldRequestPermission && permission === "default") {
     permission = await Notification.requestPermission();
   }
 
@@ -123,23 +128,22 @@ export async function ensurePushSubscription(options: {
     return { ok: false, reason: "default" };
   }
 
-  const vapidPublicKey = await getVapidPublicKey();
+  const [vapidPublicKey, role] = await Promise.all([
+    getVapidPublicKey(),
+    resolveRole(options.role),
+  ]);
+
   if (!vapidPublicKey) {
     return { ok: false, reason: "no-vapid" };
   }
 
-  const role = await resolveRole(options.role);
-
   try {
-    // Ensure SW is registered before waiting for ready (avoids hang if Gate runs first)
-    if (process.env.NODE_ENV !== "development") {
-      const existing = await navigator.serviceWorker.getRegistration("/");
-      if (!existing) {
-        await navigator.serviceWorker.register("/sw.js", { scope: "/" });
-      }
-    }
+    const { waitForServiceWorker } = await import("@/lib/service-worker-client");
+    const registration = await waitForServiceWorker();
 
-    const registration = await navigator.serviceWorker.ready;
+    if (!registration) {
+      return { ok: false, reason: "sw-unavailable" };
+    }
 
     let subscription = await registration.pushManager.getSubscription();
     if (!subscription) {

@@ -1,6 +1,11 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
+import {
+  ExpirationPlugin,
+  NetworkFirst,
+  RangeRequestsPlugin,
+  Serwist,
+} from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -10,12 +15,48 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope & typeof globalThis;
 
+const STALE_HERO_CACHE_NAMES = [
+  "static-image-assets",
+  "static-video-assets",
+  "hero-media",
+  "hero-media-v2",
+];
+
+const heroMediaCache = {
+  matcher: ({ url, sameOrigin }: { url: URL; sameOrigin: boolean }) =>
+    sameOrigin && url.pathname.startsWith("/images/"),
+  handler: new NetworkFirst({
+    cacheName: "hero-media-v2",
+    networkTimeoutSeconds: 8,
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 8,
+        maxAgeSeconds: 3600,
+        maxAgeFrom: "last-used",
+      }),
+      new RangeRequestsPlugin(),
+    ],
+  }),
+};
+
+const runtimeCaching = [
+  heroMediaCache,
+  ...defaultCache.filter((entry) => {
+    if (!(entry.matcher instanceof RegExp)) return true;
+    const source = entry.matcher.source;
+    return (
+      !source.includes("jpg|jpeg|gif|png|svg|ico|webp") &&
+      !source.includes("mp4|webm")
+    );
+  }),
+];
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching,
   fallbacks: {
     entries: [
       {
@@ -29,6 +70,24 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    (async () => {
+      for (const cacheName of STALE_HERO_CACHE_NAMES) {
+        const cache = await caches.open(cacheName).catch(() => null);
+        if (!cache) continue;
+
+        const keys = await cache.keys();
+        await Promise.all(
+          keys
+            .filter((request) => request.url.includes("hero.jpg"))
+            .map((request) => cache.delete(request))
+        );
+      }
+    })()
+  );
+});
 
 self.addEventListener("push", (event) => {
   let data: { title?: string; body?: string; url?: string; tag?: string } = {};

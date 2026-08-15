@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Frank_Ruhl_Libre, Kaushan_Script, Rubik } from "next/font/google";
+import localFont from "next/font/local";
+import { Rubik } from "next/font/google";
 import { BottomNav, Header } from "@/components/Header";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { NotificationPermissionGate } from "@/components/NotificationPermissionGate";
@@ -13,16 +14,11 @@ const rubik = Rubik({
   weight: ["300", "400", "500", "600", "700", "800"],
 });
 
-const frankRuhl = Frank_Ruhl_Libre({
-  variable: "--font-display",
-  subsets: ["hebrew", "latin"],
-  weight: ["400", "500", "700", "800", "900"],
-});
-
-const brand = Kaushan_Script({
-  variable: "--font-brand",
-  subsets: ["latin"],
-  weight: ["400"],
+const migdal = localFont({
+  src: "../../public/fonts/migdal-haemek.woff",
+  variable: "--font-migdal",
+  weight: "400",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -66,7 +62,7 @@ export default async function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className={`${rubik.variable} ${frankRuhl.variable} ${brand.variable} antialiased`}>
+      <body className={`${rubik.variable} ${migdal.variable} antialiased`}>
         <Header />
         <main className="page-shell">{children}</main>
         <BottomNav />
