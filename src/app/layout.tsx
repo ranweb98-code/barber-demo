@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { Rubik } from "next/font/google";
+import { Kaushan_Script, Rubik } from "next/font/google";
 import { BottomNav, Header } from "@/components/Header";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { NotificationPermissionGate } from "@/components/NotificationPermissionGate";
@@ -19,6 +19,12 @@ const migdal = localFont({
   variable: "--font-migdal",
   weight: "400",
   display: "swap",
+});
+
+const brand = Kaushan_Script({
+  variable: "--font-brand",
+  subsets: ["latin"],
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
@@ -62,7 +68,7 @@ export default async function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className={`${rubik.variable} ${migdal.variable} antialiased`}>
+      <body className={`${rubik.variable} ${migdal.variable} ${brand.variable} antialiased`}>
         <Header />
         <main className="page-shell">{children}</main>
         <BottomNav />
