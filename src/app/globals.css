@@ -103,11 +103,18 @@ body {
 h1,
 h2,
 h3,
-h4 {
+h4,
+.font-display,
+.font-serif {
   font-family: var(--font-migdal), var(--font-display), Georgia, serif;
   font-weight: 400;
   letter-spacing: -0.03em;
   line-height: 1.15;
+  -webkit-text-stroke: 0.4px currentColor;
+  paint-order: stroke fill;
+  text-shadow:
+    0.02em 0 0 currentColor,
+    -0.02em 0 0 currentColor;
 }
 
 .site-container {
@@ -325,29 +332,33 @@ h4 {
 
 .brand-name,
 .brand-lockup-name {
-  font-family: var(--font-migdal), var(--font-brand), cursive;
+  font-family: var(--font-brand), cursive;
   font-weight: 400;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.02em;
   text-transform: none;
+  transform: skewX(6deg);
+  transform-origin: center;
   color: #f2f2f2;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .brand-lockup-name {
-  font-size: 1.45rem;
+  font-size: 1.65rem;
   line-height: 1;
 }
 
 .brand-name--hero {
-  font-size: clamp(2rem, 7vw, 3rem);
-  letter-spacing: -0.04em;
+  font-size: clamp(2.25rem, 8vw, 3.25rem);
+  letter-spacing: 0.01em;
+  transform: skewX(8deg);
   color: #ffffff;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
 .brand-name--card {
-  font-size: 1.6rem;
-  letter-spacing: -0.03em;
+  font-size: 1.75rem;
+  letter-spacing: 0.01em;
+  transform: skewX(6deg);
   color: var(--text-primary);
   text-shadow: none;
 }
@@ -643,9 +654,14 @@ a.info-row--link:hover {
 .section-heading__title {
   font-family: var(--font-display), Georgia, serif;
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 400;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+  -webkit-text-stroke: 0.4px currentColor;
+  paint-order: stroke fill;
+  text-shadow:
+    0.02em 0 0 currentColor,
+    -0.02em 0 0 currentColor;
 }
 
 .section-heading__sub {
