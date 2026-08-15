@@ -116,15 +116,20 @@ export async function ensurePushSubscription(options: {
 
   const shouldRequestPermission = options.requestPermission ?? true;
 
-  // Start SW install early so iOS PWA has an active worker after permission grant.
-  const { registerServiceWorkerEarly, waitForServiceWorker } = await import(
+  const { prepareServiceWorkerForPush } = await import(
     "@/lib/service-worker-client"
   );
-  void registerServiceWorkerEarly();
 
   let permission = Notification.permission;
 
+  // iOS requires an active service worker before the permission prompt.
+  let registration = await prepareServiceWorkerForPush();
+
   if (shouldRequestPermission && permission === "default") {
+    if (!registration?.active) {
+      registration = await prepareServiceWorkerForPush();
+    }
+
     permission = await Notification.requestPermission();
   }
 
@@ -145,13 +150,14 @@ export async function ensurePushSubscription(options: {
   }
 
   try {
-    let registration = await waitForServiceWorker();
-
-    // iOS PWA can need a beat after permission grant before SW is active.
     if (!registration?.active) {
-      for (let attempt = 0; attempt < 3 && !registration?.active; attempt++) {
-        await new Promise((r) => setTimeout(r, 800));
-        registration = await waitForServiceWorker(15000);
+      registration = await prepareServiceWorkerForPush();
+    }
+
+    if (!registration?.active) {
+      for (let attempt = 0; attempt < 4 && !registration?.active; attempt++) {
+        await new Promise((r) => setTimeout(r, 1000));
+        registration = await prepareServiceWorkerForPush(20000);
       }
     }
 

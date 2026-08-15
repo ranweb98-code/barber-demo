@@ -11,7 +11,10 @@ import {
   notificationPermission,
   type EnsurePushResult,
 } from "@/lib/push-client";
-import { registerServiceWorkerEarly } from "@/lib/service-worker-client";
+import {
+  prepareServiceWorkerForPush,
+  registerServiceWorkerEarly,
+} from "@/lib/service-worker-client";
 
 type GateState =
   | "loading"
@@ -65,6 +68,8 @@ export function NotificationPermissionGate() {
     setState("subscribing");
     setErrorMessage("");
 
+    await prepareServiceWorkerForPush();
+
     const result = await ensurePushSubscription({
       role,
       requestPermission: false,
@@ -93,6 +98,9 @@ export function NotificationPermissionGate() {
     }
 
     if (permission === "granted") {
+      setState("subscribing");
+      await prepareServiceWorkerForPush();
+
       const active = await hasActivePushSubscription();
       if (active) {
         setState("hidden");
@@ -122,6 +130,7 @@ export function NotificationPermissionGate() {
     setState("subscribing");
 
     try {
+      await prepareServiceWorkerForPush();
       const result = await ensurePushSubscription({ role });
       applyResult(result);
     } finally {
