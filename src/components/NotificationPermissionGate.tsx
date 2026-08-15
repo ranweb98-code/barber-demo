@@ -11,6 +11,7 @@ import {
   notificationPermission,
   type EnsurePushResult,
 } from "@/lib/push-client";
+import { registerServiceWorkerEarly } from "@/lib/service-worker-client";
 
 type GateState =
   | "loading"
@@ -104,6 +105,12 @@ export function NotificationPermissionGate() {
 
     setState("need-permission");
   }, [isAdminLogin, subscribeAndWait]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (isAdminLogin || !isStandaloneDisplay()) return;
+    void registerServiceWorkerEarly();
+  }, [isAdminLogin]);
 
   useEffect(() => {
     void evaluate();
