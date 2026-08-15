@@ -29,6 +29,39 @@ export function registerServiceWorkerEarly(): Promise<ServiceWorkerRegistration 
   return registrationPromise;
 }
 
+function waitForActiveWorker(
+  registration: ServiceWorkerRegistration,
+  timeoutMs: number
+): Promise<ServiceWorkerRegistration | null> {
+  if (registration.active) {
+    return Promise.resolve(registration);
+  }
+
+  const worker = registration.installing ?? registration.waiting;
+  if (!worker) {
+    return Promise.resolve(null);
+  }
+
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), timeoutMs);
+
+    const finish = () => {
+      clearTimeout(timer);
+      resolve(registration.active ? registration : null);
+    };
+
+    worker.addEventListener("statechange", () => {
+      if (worker.state === "activated") {
+        finish();
+      }
+    });
+
+    if (worker.state === "activated") {
+      finish();
+    }
+  });
+}
+
 export async function waitForServiceWorker(
   timeoutMs = SW_TIMEOUT_MS
 ): Promise<ServiceWorkerRegistration | null> {
@@ -40,7 +73,20 @@ export async function waitForServiceWorker(
     return null;
   }
 
-  await registerServiceWorkerEarly();
+  const registration = await registerServiceWorkerEarly();
+  if (!registration) {
+    return Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), timeoutMs);
+      }),
+    ]);
+  }
+
+  const activeRegistration = await waitForActiveWorker(registration, timeoutMs);
+  if (activeRegistration) {
+    return activeRegistration;
+  }
 
   return Promise.race([
     navigator.serviceWorker.ready,
@@ -57,7 +103,7 @@ export async function hasActivePushSubscription(): Promise<boolean> {
 
   try {
     const registration = await navigator.serviceWorker.getRegistration("/");
-    if (!registration) return false;
+    if (!registration?.active) return false;
     const subscription = await registration.pushManager.getSubscription();
     return subscription !== null;
   } catch {

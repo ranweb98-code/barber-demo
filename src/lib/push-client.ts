@@ -142,7 +142,11 @@ export async function ensurePushSubscription(options: {
     const registration = await waitForServiceWorker();
 
     if (!registration) {
-      return { ok: false, reason: "sw-unavailable" };
+      return {
+        ok: false,
+        reason: "sw-unavailable",
+        message: "שירות הרקע של האפליקציה לא מוכן. נסו שוב.",
+      };
     }
 
     let subscription = await registration.pushManager.getSubscription();
@@ -192,6 +196,13 @@ export async function ensurePushSubscription(options: {
     return { ok: true, endpoint: json.endpoint };
   } catch (error) {
     console.error("[push-client] ensurePushSubscription failed:", error);
-    return { ok: false, reason: "subscribe-failed" };
+    return {
+      ok: false,
+      reason: "subscribe-failed",
+      message:
+        error instanceof Error && error.message
+          ? error.message
+          : "לא הצלחנו לרשום את ההתראות במכשיר",
+    };
   }
 }
