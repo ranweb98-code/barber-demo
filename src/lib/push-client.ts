@@ -1,4 +1,5 @@
 export const PUSH_ENDPOINT_KEY = "pushEndpoint";
+const SW_RELOAD_KEY = "push-sw-reload-done";
 
 export type PushRole = "customer" | "owner";
 
@@ -115,21 +116,14 @@ export async function ensurePushSubscription(options: {
   }
 
   const shouldRequestPermission = options.requestPermission ?? true;
-
   const { prepareServiceWorkerForPush } = await import(
     "@/lib/service-worker-client"
   );
 
   let permission = Notification.permission;
-
-  // iOS requires an active service worker before the permission prompt.
   let registration = await prepareServiceWorkerForPush();
 
   if (shouldRequestPermission && permission === "default") {
-    if (!registration?.active) {
-      registration = await prepareServiceWorkerForPush();
-    }
-
     permission = await Notification.requestPermission();
   }
 
@@ -155,10 +149,8 @@ export async function ensurePushSubscription(options: {
     }
 
     if (!registration?.active) {
-      for (let attempt = 0; attempt < 4 && !registration?.active; attempt++) {
-        await new Promise((r) => setTimeout(r, 1000));
-        registration = await prepareServiceWorkerForPush(20000);
-      }
+      await new Promise((r) => setTimeout(r, 500));
+      registration = await prepareServiceWorkerForPush();
     }
 
     if (!registration?.active) {
@@ -213,6 +205,20 @@ export async function ensurePushSubscription(options: {
     }
 
     storeEndpoint(json.endpoint);
+
+    if (
+      isStandaloneDisplay() &&
+      !navigator.serviceWorker.controller &&
+      !sessionStorage.getItem(SW_RELOAD_KEY)
+    ) {
+      try {
+        sessionStorage.setItem(SW_RELOAD_KEY, "1");
+      } catch {
+        // ignore
+      }
+      location.reload();
+    }
+
     return { ok: true, endpoint: json.endpoint };
   } catch (error) {
     console.error("[push-client] ensurePushSubscription failed:", error);

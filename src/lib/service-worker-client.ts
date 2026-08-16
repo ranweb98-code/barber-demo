@@ -1,4 +1,4 @@
-const SW_TIMEOUT_MS = 60000;
+const SW_TIMEOUT_MS = 15000;
 
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null =
   null;
@@ -40,65 +40,6 @@ function skipWaitingWorker(registration: ServiceWorkerRegistration) {
   registration.waiting?.postMessage({ type: "SKIP_WAITING" });
 }
 
-function waitForActiveRegistration(
-  timeoutMs: number
-): Promise<ServiceWorkerRegistration | null> {
-  return Promise.race([
-    navigator.serviceWorker.ready,
-    new Promise<null>((resolve) => {
-      setTimeout(() => resolve(null), timeoutMs);
-    }),
-  ]);
-}
-
-function waitForWorkerActivation(
-  registration: ServiceWorkerRegistration,
-  timeoutMs: number
-): Promise<ServiceWorkerRegistration | null> {
-  if (registration.active) {
-    return Promise.resolve(registration);
-  }
-
-  return new Promise((resolve) => {
-    const deadline = Date.now() + timeoutMs;
-
-    const finish = (value: ServiceWorkerRegistration | null) => {
-      resolve(value);
-    };
-
-    const check = () => {
-      if (registration.active) {
-        finish(registration);
-        return true;
-      }
-
-      skipWaitingWorker(registration);
-
-      if (Date.now() >= deadline) {
-        finish(null);
-        return true;
-      }
-
-      return false;
-    };
-
-    const worker = registration.installing ?? registration.waiting;
-    if (worker) {
-      worker.addEventListener("statechange", () => {
-        if (worker.state === "activated" || registration.active) {
-          finish(registration);
-        }
-      });
-    }
-
-    if (check()) return;
-
-    const poll = setInterval(() => {
-      if (check()) clearInterval(poll);
-    }, 250);
-  });
-}
-
 export async function waitForServiceWorker(
   timeoutMs = SW_TIMEOUT_MS
 ): Promise<ServiceWorkerRegistration | null> {
@@ -110,49 +51,33 @@ export async function waitForServiceWorker(
     return null;
   }
 
-  const started = Date.now();
-  const remaining = () => Math.max(0, timeoutMs - (Date.now() - started));
-
   try {
-    let registration =
+    const registration =
       (await navigator.serviceWorker.getRegistration("/")) ??
       (await registerServiceWorkerEarly());
 
-    if (!registration) {
-      try {
-        registration = await navigator.serviceWorker.register("/sw.js", {
-          scope: "/",
-          updateViaCache: "none",
-        });
-      } catch (error) {
-        console.error("[service-worker-client] register retry failed:", error);
-      }
-    }
-
-    if (!registration) {
-      return waitForActiveRegistration(remaining());
-    }
+    if (!registration) return null;
 
     skipWaitingWorker(registration);
 
-    const activated = await waitForWorkerActivation(registration, remaining());
-    if (activated?.active) {
-      return activated;
+    if (registration.active) {
+      return registration;
     }
 
-    const ready = await waitForActiveRegistration(remaining());
-    if (ready?.active) {
-      return ready;
-    }
+    const ready = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), timeoutMs);
+      }),
+    ]);
 
-    return registration.active ? registration : null;
+    return ready?.active ? ready : null;
   } catch (error) {
     console.error("[service-worker-client] waitForServiceWorker failed:", error);
     return null;
   }
 }
 
-/** Register and wait until the worker is active — required before iOS push permission. */
 export async function prepareServiceWorkerForPush(
   timeoutMs = SW_TIMEOUT_MS
 ): Promise<ServiceWorkerRegistration | null> {
@@ -166,7 +91,7 @@ export async function hasActivePushSubscription(): Promise<boolean> {
   }
 
   try {
-    const registration = await waitForServiceWorker(10000);
+    const registration = await waitForServiceWorker(8000);
     if (!registration?.active) return false;
     const subscription = await registration.pushManager.getSubscription();
     return subscription !== null;

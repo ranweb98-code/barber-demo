@@ -4,7 +4,7 @@ import { Kaushan_Script, Rubik } from "next/font/google";
 import { BottomNav, Header } from "@/components/Header";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { NotificationPermissionGate } from "@/components/NotificationPermissionGate";
-import { SerwistRegister } from "@/components/SerwistRegister";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { getSetting } from "@/lib/settings";
 import "./globals.css";
 
@@ -73,7 +73,7 @@ export default async function RootLayout({
         <main className="page-shell">{children}</main>
         <BottomNav />
         <InstallPrompt />
-        <SerwistRegister />
+        <ServiceWorkerRegister />
         <NotificationPermissionGate />
       </body>
     </html>

@@ -1,21 +1,4 @@
 import type { NextConfig } from "next";
-import withSerwistInit from "@serwist/next";
-import { swManifestTransform } from "./scripts/sw-manifest-transform.mjs";
-
-const withSerwist = withSerwistInit({
-  swSrc: "src/app/sw.ts",
-  swDest: "public/sw.js",
-  disable: process.env.NODE_ENV === "development",
-  manifestTransforms: [swManifestTransform],
-  // Cloudflare config files are not routable URLs — precaching them 404s and aborts SW install.
-  globPublicPatterns: [
-    "icons/**",
-    "fonts/**",
-    "images/**",
-    "screenshots/**",
-    "manifest.webmanifest",
-  ],
-});
 
 const nextConfig: NextConfig = {
   serverExternalPackages: [
@@ -50,6 +33,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSerwist(nextConfig);
+export default nextConfig;
 
-import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());
+import("@opennextjs/cloudflare").then((m) =>
+  m.initOpenNextCloudflareForDev()
+);

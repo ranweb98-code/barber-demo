@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Bell, BellOff, RefreshCw, Settings } from "lucide-react";
 import { Button } from "@/components/Button";
@@ -11,10 +11,6 @@ import {
   notificationPermission,
   type EnsurePushResult,
 } from "@/lib/push-client";
-import {
-  prepareServiceWorkerForPush,
-  registerServiceWorkerEarly,
-} from "@/lib/service-worker-client";
 
 type GateState =
   | "loading"
@@ -30,12 +26,14 @@ export function NotificationPermissionGate() {
   const [state, setState] = useState<GateState>("loading");
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const passedRef = useRef(false);
 
   const isAdminLogin = pathname === "/admin/login";
   const role = pathname?.startsWith("/admin") ? "owner" : "customer";
 
   const applyResult = useCallback((result: EnsurePushResult) => {
     if (result.ok) {
+      passedRef.current = true;
       setState("hidden");
       return;
     }
@@ -51,6 +49,7 @@ export function NotificationPermissionGate() {
     }
 
     if (result.reason === "unsupported") {
+      passedRef.current = true;
       setState("hidden");
       return;
     }
@@ -64,22 +63,9 @@ export function NotificationPermissionGate() {
     setState("error");
   }, []);
 
-  const subscribeAndWait = useCallback(async () => {
-    setState("subscribing");
-    setErrorMessage("");
-
-    await prepareServiceWorkerForPush();
-
-    const result = await ensurePushSubscription({
-      role,
-      requestPermission: false,
-    });
-
-    applyResult(result);
-  }, [applyResult, role]);
-
   const evaluate = useCallback(async () => {
     if (typeof window === "undefined") return;
+    if (passedRef.current) return;
 
     if (isAdminLogin || !isStandaloneDisplay()) {
       setState("hidden");
@@ -99,26 +85,23 @@ export function NotificationPermissionGate() {
 
     if (permission === "granted") {
       setState("subscribing");
-      await prepareServiceWorkerForPush();
-
       const active = await hasActivePushSubscription();
       if (active) {
+        passedRef.current = true;
         setState("hidden");
         return;
       }
 
-      await subscribeAndWait();
+      const result = await ensurePushSubscription({
+        role,
+        requestPermission: false,
+      });
+      applyResult(result);
       return;
     }
 
     setState("need-permission");
-  }, [isAdminLogin, subscribeAndWait]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (isAdminLogin || !isStandaloneDisplay()) return;
-    void registerServiceWorkerEarly();
-  }, [isAdminLogin]);
+  }, [applyResult, isAdminLogin, role]);
 
   useEffect(() => {
     void evaluate();
@@ -130,7 +113,6 @@ export function NotificationPermissionGate() {
     setState("subscribing");
 
     try {
-      await prepareServiceWorkerForPush();
       const result = await ensurePushSubscription({ role });
       applyResult(result);
     } finally {
