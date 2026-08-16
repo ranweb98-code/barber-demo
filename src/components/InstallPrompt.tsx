@@ -1,40 +1,58 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Share, X } from "lucide-react";
+import Image from "next/image";
+import { Share, Smartphone } from "lucide-react";
 import { Button } from "./Button";
-import { GlassCard } from "./GlassCard";
-import { ensurePushSubscription } from "@/lib/push-client";
+import { BUSINESS_NAME } from "@/lib/utils";
+
+const DISMISS_KEY = "pwa-install-prompt-dismissed";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
+function isStandalone(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    ("standalone" in navigator &&
+      Boolean((navigator as Navigator & { standalone?: boolean }).standalone))
+  );
+}
+
+function isMobileBrowser(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 767px)").matches;
+}
+
+function wasDismissed(): boolean {
+  try {
+    return localStorage.getItem(DISMISS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markDismissed() {
+  try {
+    localStorage.setItem(DISMISS_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
 export function InstallPrompt() {
+  const [visible, setVisible] = useState(false);
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [showIOS, setShowIOS] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (isStandalone() || !isMobileBrowser() || wasDismissed()) return;
 
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      ("standalone" in navigator &&
-        (navigator as Navigator & { standalone?: boolean }).standalone);
-
-    if (isStandalone) return;
-
-    const isIOS =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-      !(window as Window & { MSStream?: unknown }).MSStream;
-
-    if (isIOS) {
-      const timer = setTimeout(() => setShowIOS(true), 3000);
-      return () => clearTimeout(timer);
-    }
+    const timer = window.setTimeout(() => setVisible(true), 600);
 
     const handler = (e: Event) => {
       e.preventDefault();
@@ -42,72 +60,87 @@ export function InstallPrompt() {
     };
 
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("beforeinstallprompt", handler);
+    };
   }, []);
 
-  if (dismissed) return null;
-
-  if (deferredPrompt) {
-    return (
-      <div className="fixed inset-x-4 bottom-20 z-50 md:bottom-4 md:inset-x-auto md:left-4 md:max-w-sm">
-        <GlassCard className="flex items-start gap-3 shadow-2xl">
-          <Download className="mt-1 h-5 w-5 shrink-0 text-accent-gold" />
-          <div className="flex-1 space-y-3">
-            <div>
-              <p className="font-medium text-cream">הוסף למסך הבית</p>
-              <p className="text-sm text-cream/60">
-                קבע תורים מהר יותר — כמו אפליקציה אמיתית
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                className="flex-1"
-                onClick={async () => {
-                  await deferredPrompt.prompt();
-                  const choice = await deferredPrompt.userChoice;
-                  setDeferredPrompt(null);
-                  setDismissed(true);
-                  if (choice.outcome === "accepted") {
-                    void ensurePushSubscription({ role: "customer" });
-                  }
-                }}
-              >
-                התקן
-              </Button>
-              <Button variant="ghost" onClick={() => setDismissed(true)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </GlassCard>
-      </div>
-    );
+  function dismiss() {
+    markDismissed();
+    setVisible(false);
   }
 
-  if (showIOS) {
-    return (
-      <div className="fixed inset-x-4 bottom-20 z-50 md:bottom-4">
-        <GlassCard className="space-y-3 shadow-2xl">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="font-medium text-cream">הוסף למסך הבית</p>
-              <p className="mt-1 text-sm text-cream/60">
-                לחץ על <Share className="inline h-4 w-4" /> Share ואז &quot;Add to Home
-                Screen&quot;
-              </p>
-            </div>
-            <button
-              onClick={() => setDismissed(true)}
-              className="text-cream/50 hover:text-cream"
-              aria-label="סגור"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </GlassCard>
-      </div>
-    );
+  async function installAndroid() {
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    dismiss();
   }
 
-  return null;
+  if (!visible) return null;
+
+  return (
+    <div
+      className="install-prompt-overlay fixed inset-0 z-[110] flex items-end justify-center bg-black/55 p-4 backdrop-blur-sm sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="install-prompt-title"
+    >
+      <div className="install-prompt-card w-full max-w-sm rounded-3xl bg-[#fffaf8] px-6 pb-6 pt-8 text-center shadow-2xl">
+        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-black shadow-md">
+          <Image
+            src="/icons/icon-192.png"
+            alt={BUSINESS_NAME}
+            width={80}
+            height={80}
+            className="h-full w-full object-cover"
+            priority
+          />
+        </div>
+
+        <div className="mx-auto mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-[#f8d7d7] text-[#c45c5c]">
+          <Smartphone className="h-5 w-5" aria-hidden />
+        </div>
+
+        <h2
+          id="install-prompt-title"
+          className="font-display text-[1.65rem] leading-tight text-[#1a1a1a]"
+        >
+          הוסיפו את{" "}
+          <span className="brand-name inline-block text-[1.85rem] text-black">
+            {BUSINESS_NAME}
+          </span>{" "}
+          למסך הבית
+        </h2>
+
+        <p className="mt-4 text-sm leading-relaxed text-[#444]">
+          כך תקבלו גישה מהירה ותזכורות על תורים. הקישו על{" "}
+          <Share className="mx-0.5 inline h-4 w-4 align-text-bottom text-[#555]" />{" "}
+          Share למטה, ובחרו &quot;הוסף למסך הבית&quot;{" "}
+          <span className="font-semibold">+</span>. אחרי שתפתחו מהאייקון – נבקש
+          לאפשר התראות.
+        </p>
+
+        <div className="mt-5 rounded-2xl bg-[#ececec] px-4 py-3 text-sm leading-relaxed text-[#333]">
+          אחרי שהוספתם – סגרו את הדפדפן ופתחו את האפליקציה מהאייקון במסך הבית.
+        </div>
+
+        {deferredPrompt && (
+          <Button className="mt-5 w-full" onClick={() => void installAndroid()}>
+            התקינו עכשיו
+          </Button>
+        )}
+
+        <button
+          type="button"
+          onClick={dismiss}
+          className="mt-5 text-sm text-[#666] underline-offset-2 hover:text-[#333] hover:underline"
+        >
+          המשיכו בדפדפן בינתיים
+        </button>
+      </div>
+    </div>
+  );
 }
