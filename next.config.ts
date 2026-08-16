@@ -7,6 +7,14 @@ const withSerwist = withSerwistInit({
   swDest: "public/sw.js",
   disable: process.env.NODE_ENV === "development",
   manifestTransforms: [swManifestTransform],
+  // Cloudflare config files are not routable URLs — precaching them 404s and aborts SW install.
+  globPublicPatterns: [
+    "icons/**",
+    "fonts/**",
+    "images/**",
+    "screenshots/**",
+    "manifest.webmanifest",
+  ],
 });
 
 const nextConfig: NextConfig = {

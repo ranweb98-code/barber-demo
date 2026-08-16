@@ -12,6 +12,7 @@ export async function swManifestTransform(manifestEntries) {
     .filter((entry) => {
       const { url } = entry;
       if (url.startsWith("/api/")) return false;
+      if (url === "/_headers" || url === "/_redirects") return false;
       if (url.includes("hero.jpg")) return false;
       return true;
     });

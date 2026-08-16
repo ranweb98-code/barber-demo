@@ -9,7 +9,12 @@ sw = sw.replace(
   /\{'revision':(?:null|'[^']*'),'url':'([^']+)'\}/g,
   (full, url) => {
     const fixed = url.replace(/\\/g, "/").replace(/\/+/g, "/");
-    if (fixed.startsWith("/api/") || fixed.includes("hero.jpg")) {
+    if (
+      fixed.startsWith("/api/") ||
+      fixed === "/_headers" ||
+      fixed === "/_redirects" ||
+      fixed.includes("hero.jpg")
+    ) {
       return "";
     }
     if (fixed === url) return full;
@@ -25,10 +30,11 @@ fs.writeFileSync(swPath, sw);
 
 const after = (sw.match(/\{'revision'/g) ?? []).length;
 const backslash = (sw.match(/'url':'[^']*\\[^']*'/g) ?? []).length;
+const blocked = (sw.match(/'url':'\/_(headers|redirects)'/g) ?? []).length;
 console.log(
-  `[fix-sw-manifest] ${swPath}: ${before} -> ${after} entries, ${backslash} backslash urls left`
+  `[fix-sw-manifest] ${swPath}: ${before} -> ${after} entries, ${backslash} backslash urls, ${blocked} config urls left`
 );
 
-if (backslash > 0) {
+if (backslash > 0 || blocked > 0) {
   process.exitCode = 1;
 }
