@@ -1,5 +1,4 @@
 export const PUSH_ENDPOINT_KEY = "pushEndpoint";
-const SW_RELOAD_KEY = "push-sw-reload-done";
 
 export type PushRole = "customer" | "owner";
 
@@ -205,20 +204,6 @@ export async function ensurePushSubscription(options: {
     }
 
     storeEndpoint(json.endpoint);
-
-    if (
-      isStandaloneDisplay() &&
-      !navigator.serviceWorker.controller &&
-      !sessionStorage.getItem(SW_RELOAD_KEY)
-    ) {
-      try {
-        sessionStorage.setItem(SW_RELOAD_KEY, "1");
-      } catch {
-        // ignore
-      }
-      location.reload();
-    }
-
     return { ok: true, endpoint: json.endpoint };
   } catch (error) {
     console.error("[push-client] ensurePushSubscription failed:", error);

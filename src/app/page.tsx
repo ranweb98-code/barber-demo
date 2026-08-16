@@ -19,13 +19,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const viewingPublicSite = publicView === "1";
 
   const [services, settings, workingHours, isAdmin] = await Promise.all([
-    prisma.service.findMany({
-      where: { active: true },
-      orderBy: { sortOrder: "asc" },
-    }),
-    getSettingsMap(),
-    prisma.workingHours.findMany({ orderBy: { dayOfWeek: "asc" } }),
-    isAuthenticated(),
+    prisma.service
+      .findMany({
+        where: { active: true },
+        orderBy: { sortOrder: "asc" },
+      })
+      .catch(() => []),
+    getSettingsMap().catch(() => ({}) as Record<string, string>),
+    prisma.workingHours.findMany({ orderBy: { dayOfWeek: "asc" } }).catch(() => []),
+    isAuthenticated().catch(() => false),
   ]);
 
   if (isAdmin && !viewingPublicSite) {

@@ -5,7 +5,7 @@ import { BottomNav, Header } from "@/components/Header";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { NotificationPermissionGate } from "@/components/NotificationPermissionGate";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
-import { getSetting } from "@/lib/settings";
+import { getThemeFromCookie } from "@/lib/theme";
 import "./globals.css";
 
 const rubik = Rubik({
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export async function generateViewport(): Promise<Viewport> {
-  const theme = await getSetting("theme", "dark");
+  const theme = await getThemeFromCookie();
   return {
     themeColor: theme === "light" ? "#ffffff" : "#000000",
     width: "device-width",
@@ -61,7 +61,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const theme = await getSetting("theme", "dark");
+  const theme = await getThemeFromCookie();
 
   return (
     <html lang="he" dir="rtl" data-theme={theme}>

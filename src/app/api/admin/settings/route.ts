@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { settingsPatchSchema } from "@/lib/schemas";
+import { themeCookieOptions } from "@/lib/theme";
 
 async function requireAdmin() {
   const authed = await isAuthenticated();
@@ -86,7 +87,17 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+    const nextTheme = settings?.theme;
+    if (nextTheme === "light" || nextTheme === "dark") {
+      const cookie = themeCookieOptions(nextTheme);
+      response.cookies.set(cookie.name, cookie.value, {
+        path: cookie.path,
+        maxAge: cookie.maxAge,
+        sameSite: cookie.sameSite,
+      });
+    }
+    return response;
   } catch (error) {
     console.error("Settings update error:", error);
     return NextResponse.json({ error: "שגיאה בעדכון הגדרות" }, { status: 500 });
