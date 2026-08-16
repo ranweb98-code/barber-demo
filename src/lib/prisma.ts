@@ -5,6 +5,15 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+function isCloudflareWorker(): boolean {
+  return (
+    (typeof navigator !== "undefined" &&
+      navigator.userAgent === "Cloudflare-Workers") ||
+    typeof (globalThis as { caches?: { default?: unknown } }).caches
+      ?.default !== "undefined"
+  );
+}
+
 function createPrismaClient(): PrismaClient {
   const connectionString =
     process.env.DATABASE_URL ?? process.env.POSTGRES_PRISMA_URL;
@@ -17,6 +26,12 @@ function createPrismaClient(): PrismaClient {
 }
 
 function getPrismaClient(): PrismaClient {
+  // Cloudflare Workers isolate I/O per request. Reusing Prisma/Neon across
+  // requests throws: "Cannot perform I/O on behalf of a different request".
+  if (isCloudflareWorker()) {
+    return createPrismaClient();
+  }
+
   if (!globalForPrisma.prisma) {
     globalForPrisma.prisma = createPrismaClient();
   }
