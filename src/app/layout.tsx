@@ -27,14 +27,36 @@ const brand = Kaushan_Script({
   weight: ["400"],
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") ??
+  "https://aviel-naim.ranweb98.workers.dev";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Aviel Naim | קביעת תורים",
   description: "מספרת יוקרה — קביעת תורים online",
   manifest: "/manifest.webmanifest",
   openGraph: {
+    type: "website",
+    locale: "he_IL",
+    url: "/",
+    siteName: "Aviel Naim",
     title: "Aviel Naim | קביעת תורים",
     description: "מספרת יוקרה — קביעת תורים online",
-    images: [{ url: "/screenshots/home-mobile.png", width: 390, height: 844, alt: "Aviel Naim" }],
+    images: [
+      {
+        url: "/og-share.jpg",
+        width: 1024,
+        height: 682,
+        alt: "Aviel Naim — מספרת יוקרה",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Aviel Naim | קביעת תורים",
+    description: "מספרת יוקרה — קביעת תורים online",
+    images: ["/og-share.jpg"],
   },
   appleWebApp: {
     capable: true,
